@@ -1,0 +1,55 @@
+# Mini-LLM Production Configuration (A100)
+
+# Output & Logging
+out_dir: 'out_production'
+eval_interval: 500        # Check validation every 500 steps
+log_interval: 10          # Log speed every 10 steps
+eval_iters: 200           # Number of batches to estimate loss
+always_save_checkpoint: false # Only save if val loss improves
+
+# Weights & Biases
+wandb_log: true
+wandb_project: 'mini-llm-production'
+wandb_run_name: '80m-run-1'
+
+# Hyperparameters for 361M Tokens
+# Goal: Train on ~1B tokens (roughly 3 epochs)
+max_iters: 10000          # Train for ~10k steps (approx 3.5 epochs)
+lr_decay_iters: 10000     # Decay over the full run
+
+# A100 Saturator Config
+batch_size: 32            # Reduced from 64 to fix OOM
+block_size: 2048          # FULL Context Window
+gradient_accumulation_steps: 8 # Increased from 4 to maintain effective batch size
+# Effective batch: 32 * 8 * 2048 = 524,288 tokens per update
+
+# Learning Rate
+learning_rate: 6.0e-4     # Standard for this scale
+min_lr: 6.0e-5            # 10% of max
+warmup_iters: 1000        # Longer warmup for stability
+
+# Optimizer
+weight_decay: 0.1
+beta1: 0.9
+beta2: 0.95
+grad_clip: 1.0
+
+# Model Architecture (80M)
+model:
+  dim: 384
+  n_layers: 16
+  n_heads: 6
+  n_kv_heads: 6
+  vocab_size: 32000
+  multiple_of: 32
+  max_seq_len: 2048       # Match block_size
+  dropout: 0.0
+
+# System
+device: 'cuda'
+compile: false            # Disabled to fix long startup hang
+dtype: 'bfloat16'         # A100 supports bfloat16
+
+# Data
+data_dir: 'data/bin'
+seed: 1337
